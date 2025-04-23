@@ -1,0 +1,39 @@
+package ru.mazahakq.appb.dto;
+
+    public class ResponseMessage {
+        private int result;
+        private String corr_id;
+        private String guid;
+
+        public ResponseMessage() {
+        }
+
+        public ResponseMessage(String corr_id) {
+            this.corr_id = corr_id;
+        }
+
+        public int getResult() {
+            return result;
+        }
+
+        public String getCorr_id() {
+            return corr_id;
+        }
+
+        public String getGuid() {
+            return guid;
+        }
+
+        public void setCorr_id(String corr_id) {
+            this.corr_id = corr_id;
+        }
+
+        public void setResult(int result) {
+            this.result = result;
+        }
+
+        public void setGuid(String guid) {
+            this.guid = guid;
+        }
+
+    }
