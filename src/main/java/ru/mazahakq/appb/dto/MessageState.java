@@ -3,12 +3,12 @@ package ru.mazahakq.appb.dto;
     // Вспомогательный класс для хранения состояния
     public class MessageState {
         private String guid;
-        private int number;
+        private Long number;
 
         public MessageState() {
         }
 
-        public MessageState(String guid, int number) {
+        public MessageState(String guid, Long number) {
             this.guid = guid;
             this.number = number;
         }
@@ -21,11 +21,11 @@ package ru.mazahakq.appb.dto;
             this.guid = guid;
         }
 
-        public int getNumber() {
+        public Long getNumber() {
             return number;
         }
 
-        public void setNumber(int number) {
+        public void setNumber(Long number) {
             this.number = number;
         }
     }

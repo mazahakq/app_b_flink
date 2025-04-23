@@ -5,6 +5,7 @@ import ru.mazahakq.appb.state.*;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.JoinedStreams;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.rabbitmq.common.RMQConnectionConfig;
 import org.apache.flink.streaming.connectors.rabbitmq.RMQSource;
@@ -23,15 +24,6 @@ public class Main {
         // env.disableOperatorChaining(); // Запрещаем объединение узлов
         // env.setParallelism(1); // Устанавливаем глобальную параллельность
 
-        // Настройка конфигурации подключения к RabbitMQ
-        RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
-                .setHost("rabbitmq") // Хост RabbitMQ
-                .setPort(5672) // Порт RabbitMQ
-                .setUserName("guest") // Пользователь
-                .setPassword("guest") // Пароль
-                .setVirtualHost("/") // Виртуальная среда
-                .build();
-
         //KAFKA
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers("kafka:9092")
@@ -47,26 +39,35 @@ public class Main {
             return mapper.readValue(message, Message.class);
         });
         DataStream<Message> kafkaGroupedStream = kafkaMappedStream.keyBy(Message::getNumber);
-        kafkaGroupedStream.flatMap(new SaveToState());
+        DataStream<String> kafkaResultStream = kafkaGroupedStream.flatMap(new SaveToState());
 
-        // Stage 1: Create separate SOURCE stage
-        DataStream<String> inputStream = env.addSource(new RMQSource<>(
+        //RabbitMQ
+        RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
+                .setHost("rabbitmq") // Хост RabbitMQ
+                .setPort(5672) // Порт RabbitMQ
+                .setUserName("guest") // Пользователь
+                .setPassword("guest") // Пароль
+                .setVirtualHost("/") // Виртуальная среда
+                .build();
+    
+        DataStream<String> inputStreamRabbitMQ = env.addSource(new RMQSource<>(
                 connectionConfig, // Конфигурация подключения
                 "numbers_queue", // Название очереди
                 true, // Автоматическое подтверждение
                 new SimpleStringSchema() // Десериализатор (например, для строк)
         )).name("Source Stage");
 
-        // Stage 2: Processing stage
-        DataStream<RequestMessage> mappedStream = inputStream.map(message -> {
+
+        DataStream<RequestMessage> mappedStreamRabbitMQ = inputStreamRabbitMQ.map(message -> {
             ObjectMapper mapper = new ObjectMapper();
             return mapper.readValue(message, RequestMessage.class);
         });
-        DataStream<RequestMessage> groupedStream = mappedStream.keyBy(value -> value.hashCode());
-        DataStream<String> resultStream = groupedStream.flatMap(new SearchInState()).name("Processing Stage");
+
+        DataStream<RequestMessage> groupedStreamRabbitMQ = mappedStreamRabbitMQ.keyBy(value -> value.hashCode());
+        DataStream<String> resultStreamRabbitMQ = groupedStreamRabbitMQ.flatMap(new SearchInState()).name("Processing Stage");
 
         // Stage 3: Separate SINK stage
-        resultStream.addSink(new RMQSink<>(
+        resultStreamRabbitMQ.addSink(new RMQSink<>(
                 connectionConfig, // Конфигурация подключения
                 "result_queue", // Название выходной очереди
                 new SimpleStringSchema() // Сериализатор

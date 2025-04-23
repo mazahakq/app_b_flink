@@ -1,7 +1,7 @@
 package ru.mazahakq.appb.dto;
 
     public class ResponseMessage {
-        private int result;
+        private Long result;
         private String corr_id;
         private String guid;
 
@@ -12,7 +12,7 @@ package ru.mazahakq.appb.dto;
             this.corr_id = corr_id;
         }
 
-        public int getResult() {
+        public Long getResult() {
             return result;
         }
 
@@ -28,7 +28,7 @@ package ru.mazahakq.appb.dto;
             this.corr_id = corr_id;
         }
 
-        public void setResult(int result) {
+        public void setResult(Long result) {
             this.result = result;
         }
 
