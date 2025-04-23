@@ -22,6 +22,8 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        //env.disableOperatorChaining(); // Запрещаем объединение узлов
+        //env.setParallelism(1); // Устанавливаем глобальную параллельность
 
         // Настройка конфигурации подключения к RabbitMQ
         RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
@@ -59,7 +61,7 @@ public class Main {
                 response.put("result", result);
 
                 Instant finishTime = Instant.now(); // Окончание обработки
-                long durationMs = Duration.between(startTime, finishTime).toMillis(); // ms
+                long durationMs = Duration.between(startTime, finishTime).toMillis();
 
                 LOGGER.info("Processing time for message id '{}': {} ms", corrId, durationMs);
 
