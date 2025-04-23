@@ -1,0 +1,31 @@
+package ru.mazahakq.appb.dto;
+
+    // Вспомогательный класс для хранения состояния
+    public class MessageState {
+        private String guid;
+        private int number;
+
+        public MessageState() {
+        }
+
+        public MessageState(String guid, int number) {
+            this.guid = guid;
+            this.number = number;
+        }
+
+        public String getGuid() {
+            return guid;
+        }
+
+        public void setGuid(String guid) {
+            this.guid = guid;
+        }
+
+        public int getNumber() {
+            return number;
+        }
+
+        public void setNumber(int number) {
+            this.number = number;
+        }
+    }

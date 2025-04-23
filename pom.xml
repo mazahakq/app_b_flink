@@ -27,7 +27,14 @@
             <artifactId>flink-connector-rabbitmq</artifactId>
             <version>${flink.version}</version>
         </dependency>
-        
+
+        <!-- Flink Kafka connector -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
+
         <!-- JSON parsing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
