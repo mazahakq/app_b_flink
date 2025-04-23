@@ -2,6 +2,7 @@ package ru.mazahakq.appb.dto;
 
     public class ResponseMessage {
         private Long result;
+        private Long number;
         private String corr_id;
         private String guid;
 
@@ -24,6 +25,10 @@ package ru.mazahakq.appb.dto;
             return guid;
         }
 
+        public Long getNumber() {
+            return number;
+        }
+
         public void setCorr_id(String corr_id) {
             this.corr_id = corr_id;
         }
@@ -34,6 +39,10 @@ package ru.mazahakq.appb.dto;
 
         public void setGuid(String guid) {
             this.guid = guid;
+        }
+
+        public void setNumber(Long number) {
+            this.number = number;
         }
 
     }

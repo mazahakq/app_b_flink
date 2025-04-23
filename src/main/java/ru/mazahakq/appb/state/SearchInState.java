@@ -6,8 +6,6 @@ import ru.mazahakq.appb.operation.ProcessingAgg;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,11 +33,12 @@ public class SearchInState extends RichFlatMapFunction<RequestMessage, String> {
         ObjectMapper mapper = new ObjectMapper();
         ResponseMessage response = ProcessingAgg.operationMessage(value);
         String corrId = response.getCorr_id();
-        Long result = response.getResult();
-        Log.logger.info("Processing time for message id '{}' search result '{}'", corrId, result);
-        Message storedMessage = mapState.get(result);
+        Long number = response.getNumber();
+        Log.logger.info("Processing time for message id '{}' search number '{}'", corrId, number);
+        Message storedMessage = mapState.get(number);
         if(storedMessage != null) {
-            response.setGuid(storedMessage.getGuid());
+            String guid = storedMessage.getGuid();
+            response.setGuid(guid);
             out.collect(mapper.writeValueAsString(response));
             Log.logger.info("Processing time for message id '{}' exists guid state", corrId);
         } else {

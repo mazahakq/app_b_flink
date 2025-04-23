@@ -5,7 +5,6 @@ import ru.mazahakq.appb.state.*;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.JoinedStreams;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.rabbitmq.common.RMQConnectionConfig;
 import org.apache.flink.streaming.connectors.rabbitmq.RMQSource;
@@ -39,7 +38,7 @@ public class Main {
             return mapper.readValue(message, Message.class);
         });
         DataStream<Message> kafkaGroupedStream = kafkaMappedStream.keyBy(Message::getNumber);
-        DataStream<String> kafkaResultStream = kafkaGroupedStream.flatMap(new SaveToState());
+        kafkaGroupedStream.flatMap(new SaveToState());
 
         //RabbitMQ
         RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
@@ -63,7 +62,7 @@ public class Main {
             return mapper.readValue(message, RequestMessage.class);
         });
 
-        DataStream<RequestMessage> groupedStreamRabbitMQ = mappedStreamRabbitMQ.keyBy(value -> value.hashCode());
+        DataStream<RequestMessage> groupedStreamRabbitMQ = mappedStreamRabbitMQ.keyBy(RequestMessage::getNumber);
         DataStream<String> resultStreamRabbitMQ = groupedStreamRabbitMQ.flatMap(new SearchInState()).name("Processing Stage");
 
         // Stage 3: Separate SINK stage

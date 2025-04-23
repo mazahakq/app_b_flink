@@ -1,8 +1,8 @@
 package ru.mazahakq.appb.dto;
 
     public class RequestMessage {
-        private int num1;
-        private int num2;
+        private Long num1;
+        private Long num2;
         private String corr_id;
         private String timestamp;
 
@@ -13,11 +13,11 @@ package ru.mazahakq.appb.dto;
             this.corr_id = corr_id;
         }
 
-        public int getNum1() {
+        public Long getNum1() {
             return num1;
         }
 
-        public int getNum2() {
+        public Long getNum2() {
             return num2;
         }
 
@@ -27,6 +27,10 @@ package ru.mazahakq.appb.dto;
 
         public String getTimestamp() {
             return timestamp;
+        }
+
+        public Long getNumber() {
+            return num1;
         }
 
     }
