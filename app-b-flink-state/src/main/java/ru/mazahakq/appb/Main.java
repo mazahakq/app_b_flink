@@ -21,7 +21,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(60000, CheckpointingMode.AT_LEAST_ONCE); // Checkpoint раз в 10 минут
-
+        
         // Kafka Конфигурация
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers("kafka:9092") // Адрес брокера
@@ -54,7 +54,7 @@ public class Main {
                 "numbers_queue", // Название очереди
                 true, // Автоматическое подтверждение
                 new SimpleStringSchema() // Десериализатор (например, для строк)
-        ))
+                ))
                 .map(message -> {
                     ObjectMapper mapper = new ObjectMapper();
                     return mapper.readValue(message, RequestMessage.class);
@@ -75,6 +75,6 @@ public class Main {
         )).name("RabbitMQ Sink Stage");
 
         // Выполнение задания
-        env.execute("app_b_flink");
+        env.execute("app-b-flink-state");
     }
 }
