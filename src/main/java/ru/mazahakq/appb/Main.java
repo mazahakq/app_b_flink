@@ -36,40 +36,35 @@ public class Main {
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
-        DataStream<String> kafkaInputStream = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(),
-                "Kafka Source");
-        DataStream<MessageInput> kafkaMappedStream = kafkaInputStream.map(message -> {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(message, MessageInput.class);
-        });
-        DataStream<MessageInput> resultStreamkafka = 
-            kafkaMappedStream
-            .keyBy(MessageInput::getNumber)
-            .flatMap(new SaveToState());
-
         //RabbitMQ
-        RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
+        RMQConnectionConfig rabbitConnectionConfig = new RMQConnectionConfig.Builder()
                 .setHost("rabbitmq") // Хост RabbitMQ
                 .setPort(5672) // Порт RabbitMQ
                 .setUserName("guest") // Пользователь
                 .setPassword("guest") // Пароль
                 .setVirtualHost("/") // Виртуальная среда
                 .build();
+
+        DataStream<MessageInput> resultStreamkafka = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(),
+                "Kafka Source")
+                .map(message -> {
+                    ObjectMapper mapper = new ObjectMapper();
+                    return mapper.readValue(message, MessageInput.class);
+                })
+                .keyBy(MessageInput::getNumber)
+                .flatMap(new SaveToState());            
     
-        DataStream<String> inputStreamRabbitMQ = env.addSource(new RMQSource<>(
-                connectionConfig, // Конфигурация подключения
+        DataStream<RequestMessage> rabbitGroupedStream = env.addSource(new RMQSource<>(
+                rabbitConnectionConfig, // Конфигурация подключения
                 "numbers_queue", // Название очереди
                 true, // Автоматическое подтверждение
                 new SimpleStringSchema() // Десериализатор (например, для строк)
-        )).name("Source Stage");
-
-
-        DataStream<RequestMessage> mappedStreamRabbitMQ = inputStreamRabbitMQ.map(message -> {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(message, RequestMessage.class);
-        });
-
-        DataStream<RequestMessage> rabbitGroupedStream = mappedStreamRabbitMQ.keyBy(RequestMessage::getNumber);           
+            ))
+            .map(message -> {
+                ObjectMapper mapper = new ObjectMapper();
+                return mapper.readValue(message, RequestMessage.class);
+            })
+            .keyBy(RequestMessage::getNumber);
 
         DataStream<Tuple2<MessageInput, RequestMessage>> joinedStreamsWithWindow = resultStreamkafka.join(rabbitGroupedStream)
             .where(MessageInput::getNumber)
@@ -81,9 +76,8 @@ public class Main {
             joinedStreamsWithWindow.keyBy(tup -> tup.f1.getNumber())
             .flatMap(new SearchInState()).name("Processing Stage");
 
-        // Stage 3: Separate SINK stage
         joinedStreams.addSink(new RMQSink<>(
-                connectionConfig, // Конфигурация подключения
+                rabbitConnectionConfig, // Конфигурация подключения
                 "result_queue", // Название выходной очереди
                 new SimpleStringSchema() // Сериализатор
         )).name("Sink Stage");
