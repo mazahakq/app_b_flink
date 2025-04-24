@@ -14,6 +14,13 @@ package ru.mazahakq.appb.dto;
             this.corr_id = corr_id;
         }
 
+        public ResponseMessage(Long number, Long result, String corr_id, String guid) {
+            this.number = number;
+            this.result = result;
+            this.corr_id = corr_id;
+            this.guid = guid;
+        }
+
         public Long getResult() {
             return result;
         }
