@@ -9,7 +9,7 @@ import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 
-// Класс SaveToState должен быть изменен, чтобы возвращать тип String
+// Сохранение данных из Kafka в Flink state
 public class SaveToState extends RichFlatMapFunction<MessageInput, MessageInput> {
     private transient MapState<Long, MessageInput> mapState;
 

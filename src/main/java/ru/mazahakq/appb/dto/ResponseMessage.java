@@ -1,5 +1,6 @@
 package ru.mazahakq.appb.dto;
 
+    // Класс ответа в RabbitMQ
     public class ResponseMessage {
         private Long result;
         private Long number;

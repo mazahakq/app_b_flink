@@ -3,6 +3,7 @@ package ru.mazahakq.appb.operation;
 import ru.mazahakq.appb.dto.RequestMessage;
 import ru.mazahakq.appb.dto.ResponseMessage;
 
+// Класс обработки Запроса RabbitMQ и получения ответа в RabbitMQ
 public class ProcessingAgg {
 
     public static ResponseMessage operationMessage(RequestMessage message) {

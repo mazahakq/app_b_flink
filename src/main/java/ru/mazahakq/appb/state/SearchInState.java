@@ -14,9 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
 
-/**
- * FlatMap Function для обработки и поиска в Keyed State.
- */
+// Извлечение данных из Flink state для получения ответа в RabbitMQ
 public class SearchInState extends RichFlatMapFunction<Tuple2<MessageInput, RequestMessage>, String> {
     private transient MapState<Long, MessageInput> mapState;
 

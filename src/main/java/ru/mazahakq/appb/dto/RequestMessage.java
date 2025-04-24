@@ -1,5 +1,6 @@
 package ru.mazahakq.appb.dto;
 
+    // Класс запроса из RabbitMQ
     public class RequestMessage {
         private Long num1;
         private Long num2;
@@ -27,10 +28,6 @@ package ru.mazahakq.appb.dto;
 
         public String getTimestamp() {
             return timestamp;
-        }
-
-        public Long getNumber() {
-            return num1;
         }
 
     }

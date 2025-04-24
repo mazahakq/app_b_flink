@@ -1,6 +1,6 @@
 package ru.mazahakq.appb.dto;
 
-    // Вспомогательный класс для обработки сообщений
+    // Класс для входящих сообщений из Kafka
     public class MessageInput {
         private String guid;
         private Long number;

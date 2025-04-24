@@ -1,6 +1,6 @@
 package ru.mazahakq.appb.dto;
 
-    // Вспомогательный класс для хранения состояния
+    // Класс объекта в State
     public class MessageState {
         private String guid;
         private Long number;

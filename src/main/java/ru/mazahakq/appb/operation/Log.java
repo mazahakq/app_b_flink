@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory;
 import ru.mazahakq.appb.Main;
 import org.slf4j.Logger;
 
+//Логирование
 public class Log {
     public static final Logger logger = LoggerFactory.getLogger(Main.class);
 }

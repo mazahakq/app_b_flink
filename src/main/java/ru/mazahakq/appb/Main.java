@@ -24,19 +24,17 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 public class Main {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(600000, CheckpointingMode.EXACTLY_ONCE);
-        // env.disableOperatorChaining(); // Запрещаем объединение узлов
-        // env.setParallelism(1); // Устанавливаем глобальную параллельность
+        env.enableCheckpointing(600000, CheckpointingMode.EXACTLY_ONCE); //Checkpoint раз в 10 минут
 
-        //KAFKA
+        //KAFKA Источник
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
-                .setBootstrapServers("kafka:9092")
-                .setTopics("messages_topic")
-                .setGroupId("app_b_flink")
-                .setStartingOffsets(OffsetsInitializer.earliest())
+                .setBootstrapServers("kafka:9092") //Адрес брокера
+                .setTopics("messages_topic") //Топик
+                .setGroupId("app_b_flink") //Consumer Group
+                .setStartingOffsets(OffsetsInitializer.earliest()) //Политика
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
-        //RabbitMQ
+        //RabbitMQ Источник
         RMQConnectionConfig rabbitConnectionConfig = new RMQConnectionConfig.Builder()
                 .setHost("rabbitmq") // Хост RabbitMQ
                 .setPort(5672) // Порт RabbitMQ
@@ -45,15 +43,17 @@ public class Main {
                 .setVirtualHost("/") // Виртуальная среда
                 .build();
 
+        //Получение сообщений из Kafka и Сохраняем в Flink State
         DataStream<MessageInput> resultStreamkafka = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(),
                 "Kafka Source")
                 .map(message -> {
                     ObjectMapper mapper = new ObjectMapper();
                     return mapper.readValue(message, MessageInput.class);
                 })
-                .keyBy(MessageInput::getNumber)
-                .flatMap(new SaveToState());            
+                .keyBy(MessageInput::getNumber) //Ключ по Number полю
+                .flatMap(new SaveToState());
     
+        //Получение сообщений из RabbitMQ
         DataStream<RequestMessage> rabbitGroupedStream = env.addSource(new RMQSource<>(
                 rabbitConnectionConfig, // Конфигурация подключения
                 "numbers_queue", // Название очереди
@@ -64,19 +64,22 @@ public class Main {
                 ObjectMapper mapper = new ObjectMapper();
                 return mapper.readValue(message, RequestMessage.class);
             })
-            .keyBy(RequestMessage::getNumber);
+            .keyBy(RequestMessage::getNum1); //Ключ по Num1 полю
 
+        //Объединение потоков для возможности доступа в Flink State из Потока RabbitMQ
         DataStream<Tuple2<MessageInput, RequestMessage>> joinedStreamsWithWindow = resultStreamkafka.join(rabbitGroupedStream)
             .where(MessageInput::getNumber)
-            .equalTo(RequestMessage::getNumber)
+            .equalTo(RequestMessage::getNum1)
             .window(TumblingProcessingTimeWindows.of(Time.seconds(1)))
             .apply((msg, reqMsg) -> Tuple2.of(msg, reqMsg), TypeInformation.of(new TypeHint<Tuple2<MessageInput, RequestMessage>>() { }));
 
-        DataStream<String> joinedStreams = 
-            joinedStreamsWithWindow.keyBy(tup -> tup.f1.getNumber())
+        //Поиск данных в Flink State и генерация ответа для RabbirMQ
+        DataStream<String> outputStreams = 
+            joinedStreamsWithWindow.keyBy(tup -> tup.f1.getNum1())
             .flatMap(new SearchInState()).name("Processing Stage");
 
-        joinedStreams.addSink(new RMQSink<>(
+        //Отправка ответа в RabbitMQ
+        outputStreams.addSink(new RMQSink<>(
                 rabbitConnectionConfig, // Конфигурация подключения
                 "result_queue", // Название выходной очереди
                 new SimpleStringSchema() // Сериализатор
