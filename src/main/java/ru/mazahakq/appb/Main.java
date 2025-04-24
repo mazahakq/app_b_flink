@@ -4,14 +4,23 @@ import ru.mazahakq.appb.dto.*;
 import ru.mazahakq.appb.state.*;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.JoinedStreams;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.rabbitmq.common.RMQConnectionConfig;
 import org.apache.flink.streaming.connectors.rabbitmq.RMQSource;
 import org.apache.flink.streaming.connectors.rabbitmq.RMQSink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -33,12 +42,14 @@ public class Main {
                 .build();
         DataStream<String> kafkaInputStream = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(),
                 "Kafka Source");
-        DataStream<Message> kafkaMappedStream = kafkaInputStream.map(message -> {
+        DataStream<MessageInput> kafkaMappedStream = kafkaInputStream.map(message -> {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(message, Message.class);
+            return mapper.readValue(message, MessageInput.class);
         });
-        DataStream<Message> kafkaGroupedStream = kafkaMappedStream.keyBy(Message::getNumber);
-        kafkaGroupedStream.flatMap(new SaveToState());
+        DataStream<MessageInput> resultStreamkafka = 
+            kafkaMappedStream
+            .keyBy(MessageInput::getNumber)
+            .flatMap(new SaveToState());
 
         //RabbitMQ
         RMQConnectionConfig connectionConfig = new RMQConnectionConfig.Builder()
@@ -62,11 +73,20 @@ public class Main {
             return mapper.readValue(message, RequestMessage.class);
         });
 
-        DataStream<RequestMessage> groupedStreamRabbitMQ = mappedStreamRabbitMQ.keyBy(RequestMessage::getNumber);
-        DataStream<String> resultStreamRabbitMQ = groupedStreamRabbitMQ.flatMap(new SearchInState()).name("Processing Stage");
+        DataStream<RequestMessage> rabbitGroupedStream = mappedStreamRabbitMQ.keyBy(RequestMessage::getNumber);           
+
+        DataStream<Tuple2<MessageInput, RequestMessage>> joinedStreamsWithWindow = resultStreamkafka.join(rabbitGroupedStream)
+            .where(MessageInput::getNumber)
+            .equalTo(RequestMessage::getNumber)
+            .window(TumblingProcessingTimeWindows.of(Time.seconds(1)))
+            .apply((msg, reqMsg) -> Tuple2.of(msg, reqMsg), TypeInformation.of(new TypeHint<Tuple2<MessageInput, RequestMessage>>() { }));
+
+        DataStream<String> joinedStreams = 
+            joinedStreamsWithWindow.keyBy(tup -> tup.f1.getNumber())
+            .flatMap(new SearchInState()).name("Processing Stage");
 
         // Stage 3: Separate SINK stage
-        resultStreamRabbitMQ.addSink(new RMQSink<>(
+        joinedStreams.addSink(new RMQSink<>(
                 connectionConfig, // Конфигурация подключения
                 "result_queue", // Название выходной очереди
                 new SimpleStringSchema() // Сериализатор

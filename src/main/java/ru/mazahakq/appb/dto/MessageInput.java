@@ -1,14 +1,14 @@
 package ru.mazahakq.appb.dto;
 
     // Вспомогательный класс для обработки сообщений
-    public class Message {
+    public class MessageInput {
         private String guid;
         private Long number;
 
-        public Message() {
+        public MessageInput() {
         }
 
-        public Message(String guid, Long number) {
+        public MessageInput(String guid, Long number) {
             this.guid = guid;
             this.number = number;
         }

@@ -10,24 +10,24 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 
 // Класс SaveToState должен быть изменен, чтобы возвращать тип String
-public class SaveToState extends RichFlatMapFunction<Message, String> {
-    private transient MapState<Long, Message> mapState;
+public class SaveToState extends RichFlatMapFunction<MessageInput, MessageInput> {
+    private transient MapState<Long, MessageInput> mapState;
 
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        MapStateDescriptor<Long, Message> descriptor =
-                new MapStateDescriptor<>("message-state", Long.class, Message.class);
+        MapStateDescriptor<Long, MessageInput> descriptor =
+                new MapStateDescriptor<>("message-state", Long.class, MessageInput.class);
         this.mapState = getRuntimeContext().getMapState(descriptor);
     }
 
     @Override
-    public void flatMap(Message value, Collector<String> out) throws Exception {
+    public void flatMap(MessageInput value, Collector<MessageInput> out) throws Exception {
         Long number = value.getNumber();
         String guid = value.getGuid();
         mapState.put(number, value);
         Log.logger.info("Processing kafka for message number '{}' guid '{}'", number, guid);
         // Возвращаем информационное сообщение
-        out.collect("Processed message with number: " + number);
+        out.collect(value);
     }
 }

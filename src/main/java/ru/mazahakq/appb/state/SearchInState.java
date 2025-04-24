@@ -6,6 +6,7 @@ import ru.mazahakq.appb.operation.ProcessingAgg;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,26 +17,26 @@ import java.time.Instant;
 /**
  * FlatMap Function для обработки и поиска в Keyed State.
  */
-public class SearchInState extends RichFlatMapFunction<RequestMessage, String> {
-    private transient MapState<Long, Message> mapState;
+public class SearchInState extends RichFlatMapFunction<Tuple2<MessageInput, RequestMessage>, String> {
+    private transient MapState<Long, MessageInput> mapState;
 
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        MapStateDescriptor<Long, Message> descriptor =
-                new MapStateDescriptor<>("message-state", Long.class, Message.class);
+        MapStateDescriptor<Long, MessageInput> descriptor =
+                new MapStateDescriptor<>("message-state", Long.class, MessageInput.class);
         this.mapState = getRuntimeContext().getMapState(descriptor);
     }
 
     @Override
-    public void flatMap(RequestMessage value, Collector<String> out) throws Exception {
+    public void flatMap(Tuple2<MessageInput, RequestMessage> value, Collector<String> out) throws Exception {
         Instant startTime = Instant.now(); // Начало обработки
         ObjectMapper mapper = new ObjectMapper();
-        ResponseMessage response = ProcessingAgg.operationMessage(value);
+        ResponseMessage response = ProcessingAgg.operationMessage(value.f1);
         String corrId = response.getCorr_id();
         Long number = response.getNumber();
         Log.logger.info("Processing time for message id '{}' search number '{}'", corrId, number);
-        Message storedMessage = mapState.get(number);
+        MessageInput storedMessage = mapState.get(number);
         if(storedMessage != null) {
             String guid = storedMessage.getGuid();
             response.setGuid(guid);
