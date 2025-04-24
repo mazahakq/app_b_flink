@@ -26,7 +26,7 @@ public class Main {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(600000, CheckpointingMode.EXACTLY_ONCE); //Checkpoint раз в 10 минут
 
-        //KAFKA Источник
+        //Kafka Конфигурация
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers("kafka:9092") //Адрес брокера
                 .setTopics("messages_topic") //Топик
@@ -34,7 +34,7 @@ public class Main {
                 .setStartingOffsets(OffsetsInitializer.earliest()) //Политика
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
-        //RabbitMQ Источник
+        //RabbitMQ Конфигурация
         RMQConnectionConfig rabbitConnectionConfig = new RMQConnectionConfig.Builder()
                 .setHost("rabbitmq") // Хост RabbitMQ
                 .setPort(5672) // Порт RabbitMQ

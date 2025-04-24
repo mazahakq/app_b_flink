@@ -13,8 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.time.Instant;
-
-// Извлечение данных из Flink state для получения ответа в RabbitMQ
+// Получение данных из flink state для генерации ответа в RabbitMQ
 public class SearchInState extends RichFlatMapFunction<Tuple2<MessageInput, RequestMessage>, String> {
     private transient MapState<Long, MessageInput> mapState;
 
