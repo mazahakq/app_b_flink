@@ -13,6 +13,7 @@
     <!-- Модули -->
     <modules>
         <module>app-b-flink</module>
+        <module>app-b-flink-rpc</module>
         <module>app-b-flink-state</module>
     </modules>
 

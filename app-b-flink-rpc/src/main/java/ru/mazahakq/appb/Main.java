@@ -33,6 +33,6 @@ public class Main {
         // Далее идёт обработка потока...
         sourceStream.process(new RpcHandler());
 
-        env.execute("RPC Job with RabbitMQ");
+        env.execute("app-b-flink-rpc");
     }
 }
